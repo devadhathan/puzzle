@@ -24,6 +24,42 @@ export const PUZZLES: PuzzleImage[] = [
     artist: 'Johannes Vermeer',
     src: '/pearl.png',
   },
+  {
+    id: 'starry',
+    title: 'The Starry Night',
+    artist: 'Vincent van Gogh',
+    src: '/starry.jpg',
+  },
+  {
+    id: 'sunflowers',
+    title: 'Sunflowers',
+    artist: 'Vincent van Gogh',
+    src: '/sunflowers.jpg',
+  },
+  {
+    id: 'nightcafe',
+    title: 'Café Terrace at Night',
+    artist: 'Vincent van Gogh',
+    src: '/nightcafe.jpg',
+  },
+  {
+    id: 'wave',
+    title: 'The Great Wave',
+    artist: 'Hokusai',
+    src: '/wave.jpg',
+  },
+  {
+    id: 'kiss',
+    title: 'The Kiss',
+    artist: 'Gustav Klimt',
+    src: '/kiss.jpg',
+  },
+  {
+    id: 'venus',
+    title: 'The Birth of Venus',
+    artist: 'Sandro Botticelli',
+    src: '/venus.jpg',
+  },
 ]
 
 /** Portrait-friendly grids for the piece-count slider */

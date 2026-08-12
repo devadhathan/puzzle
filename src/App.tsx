@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { PuzzleBoard } from './components/PuzzleBoard'
 import { Sidebar } from './components/Sidebar'
 import { PIECE_PRESETS, PUZZLES } from './puzzle/catalog'
@@ -9,6 +9,7 @@ function App() {
   const [puzzleId, setPuzzleId] = useState(PUZZLES[0].id)
   const [presetIndex, setPresetIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   const puzzle = useMemo(
     () => PUZZLES.find((p) => p.id === puzzleId) ?? PUZZLES[0],
@@ -32,6 +33,7 @@ function App() {
         open={sidebarOpen}
         onToggle={() => setSidebarOpen((v) => !v)}
         hideToggle
+        anchorRef={menuButtonRef}
       />
       <PuzzleBoard
         key={`${puzzle.id}-${preset.pieces}`}
@@ -40,7 +42,9 @@ function App() {
         cols={preset.cols}
         selectedId={selectedId}
         onSelect={setSelectedId}
-        onOpenMenu={() => setSidebarOpen(true)}
+        onOpenMenu={() => setSidebarOpen((v) => !v)}
+        menuOpen={sidebarOpen}
+        menuButtonRef={menuButtonRef}
       />
     </div>
   )

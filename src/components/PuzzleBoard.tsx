@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import confetti from 'canvas-confetti'
 import type { PuzzleConfig, PuzzlePiece } from '../puzzle/types'
 import {
@@ -32,6 +32,8 @@ interface PuzzleBoardProps {
   selectedId: string | null
   onSelect: (id: string | null) => void
   onOpenMenu?: () => void
+  menuOpen?: boolean
+  menuButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
 interface JoinBurst {
@@ -89,6 +91,8 @@ export function PuzzleBoard({
   selectedId,
   onSelect,
   onOpenMenu,
+  menuOpen = false,
+  menuButtonRef,
 }: PuzzleBoardProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [config, setConfig] = useState<PuzzleConfig | null>(null)
@@ -1063,11 +1067,20 @@ export function PuzzleBoard({
         <nav className="fig-bar" aria-label="Controls">
         <div className="fig-cluster">
           {onOpenMenu && (
-            <button type="button" className="fig-btn" onClick={onOpenMenu} title="Puzzle menu">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
+            <div className="fig-menu-wrap">
+              <button
+                ref={menuButtonRef}
+                type="button"
+                className={`fig-btn ${menuOpen ? 'is-on' : ''}`}
+                onClick={onOpenMenu}
+                title="Puzzle menu"
+                aria-expanded={menuOpen}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
           )}
           <button
             type="button"
