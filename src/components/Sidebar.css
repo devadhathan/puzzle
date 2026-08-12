@@ -99,6 +99,45 @@
   height: 0;
 }
 
+@media (max-width: 640px) {
+  .sidebar {
+    width: min(360px, calc(100vw - 1rem));
+    margin-bottom: -8px;
+  }
+
+  .sidebar-shell,
+  .sidebar-inner {
+    max-height: min(62dvh, 520px);
+  }
+
+  .sidebar-inner {
+    padding: 1rem 0.95rem 1.1rem;
+  }
+
+  .sidebar-title {
+    font-size: 1.05rem;
+  }
+
+  .puzzle-card {
+    grid-template-columns: 48px 1fr;
+    gap: 0.65rem;
+  }
+
+  .puzzle-thumb {
+    width: 48px;
+    height: 60px;
+  }
+
+  .piece-block {
+    padding: 0.1rem 0.7rem 0.75rem;
+  }
+
+  .slider-shell,
+  .piece-slider {
+    height: 32px;
+  }
+}
+
 .sidebar-top {
   display: flex;
   align-items: flex-start;

@@ -1,6 +1,7 @@
 .board-shell {
   position: relative;
   height: 100%;
+  height: 100dvh;
   width: 100%;
   overflow: hidden;
   --ink: rgba(0, 0, 0, 0.72);
@@ -1051,8 +1052,133 @@
     padding: 0.55rem 0.7rem;
   }
 
-  .ref-controls {
-    bottom: auto;
+  .board-shell {
+    --canvas-pad: 8px;
+  }
+
+  .bottom-dock {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding: 0.45rem 0.55rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+
+  .bottom-dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  .fig-bar {
+    flex: 0 0 auto;
+    gap: 0.2rem;
+    padding: 0.3rem 0.35rem;
+    border-radius: 14px;
+  }
+
+  .fig-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .fig-surface-trigger {
+    min-width: 42px;
+  }
+
+  .fig-sep {
+    height: 18px;
+    margin: 0 0.1rem;
+  }
+
+  .fig-meta {
+    gap: 0.3rem;
+    padding: 0 0.2rem;
+  }
+
+  .fig-timer,
+  .fig-groups {
+    font-size: 0.66rem;
+  }
+
+  .fig-timer svg {
+    display: none;
+  }
+
+  .fig-about-panel {
+    position: fixed;
     right: auto;
+    left: 50%;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    width: min(260px, calc(100vw - 24px));
+  }
+
+  .fig-surface-menu {
+    position: fixed;
+    left: 50%;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+  }
+
+  .ref-controls {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .ref-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ref-panel {
+    position: fixed;
+    right: 0.55rem;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    width: min(70vw, 200px);
+    max-height: min(36vh, 220px);
+  }
+
+  .piece-tool {
+    width: 36px;
+    height: 36px;
+  }
+
+  .flip-tool {
+    width: 42px;
+    height: 42px;
+  }
+
+  .rotate-tool {
+    top: -12px;
+    right: -16px;
+  }
+
+  .complete-banner {
+    top: 14%;
+    padding: 0.85rem 1.25rem 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .complete-time {
+    font-size: 1.65rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .fig-groups {
+    display: none;
+  }
+
+  .fig-timer span:not(.fig-done) {
+    letter-spacing: 0;
   }
 }

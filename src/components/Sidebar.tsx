@@ -44,13 +44,29 @@ export function Sidebar({
       const el = anchorRef?.current
       if (!el) return
       const r = el.getBoundingClientRect()
-      const menuW = Math.min(340, window.innerWidth - 24)
+      const pad = window.innerWidth < 640 ? 8 : 12
+      const menuW = Math.min(340, window.innerWidth - pad * 2)
+      const gap = 10
+      const bottom = Math.max(
+        pad + (window.visualViewport ? window.innerHeight - window.visualViewport.height : 0),
+        window.innerHeight - r.top + gap,
+      )
+
+      if (window.innerWidth < 640) {
+        // Center above the dock on phones
+        setPos({
+          left: Math.max(pad, (window.innerWidth - menuW) / 2),
+          bottom,
+        })
+        return
+      }
+
       // Center on the menu icon, then nudge slightly left
       const iconCenter = r.left + r.width / 2
       const nudged = iconCenter - menuW / 2 - 18
       setPos({
-        left: Math.max(12, Math.min(nudged, window.innerWidth - menuW - 12)),
-        bottom: Math.max(12, window.innerHeight - r.top + 10),
+        left: Math.max(pad, Math.min(nudged, window.innerWidth - menuW - pad)),
+        bottom,
       })
     }
 

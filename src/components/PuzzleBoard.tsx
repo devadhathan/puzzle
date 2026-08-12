@@ -199,6 +199,25 @@ export function PuzzleBoard({
     originY: number
   } | null>(null)
 
+  /** Touch: empty-canvas drag pans; tap (no move) deselects */
+  const touchPanRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    originX: number
+    originY: number
+    moved: boolean
+  } | null>(null)
+
+  const pinchRef = useRef<{
+    pointerIds: [number, number]
+    startDist: number
+    startZoom: number
+    mx: number
+    my: number
+  } | null>(null)
+  const touchPointsRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+
   const zoomAnimRef = useRef<{
     target: number
     mx: number
@@ -256,9 +275,12 @@ export function PuzzleBoard({
     const w = vp?.clientWidth ?? 900
     const h = vp?.clientHeight ?? 700
 
-    const maxPieceW = Math.floor((w * 0.55) / cols)
-    const maxPieceH = Math.floor((h * 0.7) / rows)
-    const size = Math.max(48, Math.min(PIECE_SIZE, maxPieceW, maxPieceH))
+    const narrow = w < 640
+    const maxPieceW = Math.floor((w * (narrow ? 0.78 : 0.55)) / cols)
+    const maxPieceH = Math.floor((h * (narrow ? 0.52 : 0.7)) / rows)
+    const cap = narrow ? 92 : PIECE_SIZE
+    const floor = narrow ? 56 : 48
+    const size = Math.max(floor, Math.min(cap, maxPieceW, maxPieceH))
 
     const { pieces: created, config: cfg, imageUrl: preview } = await createPuzzleFromImage(
       imageUrl,
@@ -275,10 +297,11 @@ export function PuzzleBoard({
     const cy = scatterH / 2
     const focusX = w / 2
     const focusY = h / 2
+    const introZoom = narrow ? Math.min(INTRO_ZOOM, 0.58) : INTRO_ZOOM
     setCamera({
-      x: focusX - cx * INTRO_ZOOM,
-      y: focusY - cy * INTRO_ZOOM,
-      zoom: INTRO_ZOOM,
+      x: focusX - cx * introZoom,
+      y: focusY - cy * introZoom,
+      zoom: introZoom,
     })
     zoomAnimRef.current.target = 1
     zoomAnimRef.current.mx = focusX
@@ -447,8 +470,54 @@ export function PuzzleBoard({
     // Listen on shell (capture) so zoom works over pieces, overlays, and empty canvas
     const shell = vp.parentElement ?? vp
     shell.addEventListener('wheel', onWheel, { passive: false, capture: true })
+
+    const beginPinchIfReady = () => {
+      if (touchPointsRef.current.size < 2 || pinchRef.current) return
+      const ids = [...touchPointsRef.current.keys()] as [number, number]
+      const a = touchPointsRef.current.get(ids[0])
+      const b = touchPointsRef.current.get(ids[1])
+      if (!a || !b) return
+      const rect = vp.getBoundingClientRect()
+      pinchRef.current = {
+        pointerIds: ids,
+        startDist: Math.hypot(a.x - b.x, a.y - b.y),
+        startZoom: cameraRef.current.zoom,
+        mx: (a.x + b.x) / 2 - rect.left,
+        my: (a.y + b.y) / 2 - rect.top,
+      }
+      // Cancel piece / pan drags so pinch owns the gesture
+      dragRef.current = null
+      panRef.current = null
+      touchPanRef.current = null
+      setDragging(false)
+    }
+
+    const onTouchPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return
+      if ((e.target as Element | null)?.closest?.('.bottom-dock, #puzzle-sidebar, .sidebar-inner, .ref-controls, .fig-about-panel, .fig-surface-menu, .piece-tool')) {
+        return
+      }
+      touchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      beginPinchIfReady()
+    }
+
+    const onTouchPointerUp = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return
+      touchPointsRef.current.delete(e.pointerId)
+      if (pinchRef.current?.pointerIds.includes(e.pointerId)) {
+        pinchRef.current = null
+      }
+    }
+
+    shell.addEventListener('pointerdown', onTouchPointerDown, { capture: true })
+    shell.addEventListener('pointerup', onTouchPointerUp, { capture: true })
+    shell.addEventListener('pointercancel', onTouchPointerUp, { capture: true })
+
     return () => {
       shell.removeEventListener('wheel', onWheel, { capture: true })
+      shell.removeEventListener('pointerdown', onTouchPointerDown, { capture: true })
+      shell.removeEventListener('pointerup', onTouchPointerUp, { capture: true })
+      shell.removeEventListener('pointercancel', onTouchPointerUp, { capture: true })
       startZoomAnimRef.current = null
       if (zoomAnimRef.current.raf != null) {
         cancelAnimationFrame(zoomAnimRef.current.raf)
@@ -487,11 +556,24 @@ export function PuzzleBoard({
   }, [ready, surface])
 
   const onViewportPointerDown = (e: React.PointerEvent) => {
-    // Plain empty click → deselect only (canvas stays put)
+    // Empty mouse click → deselect
+    // Empty touch drag → pan (tap still deselects)
     // Space / middle mouse → pan
     // Shift + empty drag → marquee select
     if (e.button === 0 && e.target === e.currentTarget && !e.shiftKey && !spaceDown) {
       e.preventDefault()
+      if (e.pointerType === 'touch') {
+        touchPanRef.current = {
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          originX: camera.x,
+          originY: camera.y,
+          moved: false,
+        }
+        ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        return
+      }
       setSelectedIds(new Set())
       onSelect(null)
       return
@@ -526,6 +608,37 @@ export function PuzzleBoard({
   }
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
+      if (touchPointsRef.current.has(e.pointerId)) {
+        touchPointsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      }
+
+      const pinch = pinchRef.current
+      if (pinch && pinch.pointerIds.includes(e.pointerId)) {
+        const a = touchPointsRef.current.get(pinch.pointerIds[0])
+        const b = touchPointsRef.current.get(pinch.pointerIds[1])
+        if (a && b) {
+          const dist = Math.hypot(a.x - b.x, a.y - b.y)
+          if (pinch.startDist > 0) {
+            const next = Math.min(
+              MAX_ZOOM,
+              Math.max(MIN_ZOOM, pinch.startZoom * (dist / pinch.startDist)),
+            )
+            const cam = cameraRef.current
+            const worldX = (pinch.mx - cam.x) / cam.zoom
+            const worldY = (pinch.my - cam.y) / cam.zoom
+            setCamera({
+              zoom: next,
+              x: pinch.mx - worldX * next,
+              y: pinch.my - worldY * next,
+            })
+            zoomAnimRef.current.target = next
+            zoomAnimRef.current.mx = pinch.mx
+            zoomAnimRef.current.my = pinch.my
+          }
+        }
+        return
+      }
+
       const world = screenToWorld(e.clientX, e.clientY)
 
       const safeDrag = safeDragRef.current
@@ -545,6 +658,25 @@ export function PuzzleBoard({
         mq.x1 = world.x
         mq.y1 = world.y
         setMarquee({ x0: mq.x0, y0: mq.y0, x1: world.x, y1: world.y })
+        return
+      }
+
+      const touchPan = touchPanRef.current
+      if (touchPan && touchPan.pointerId === e.pointerId) {
+        const dx = e.clientX - touchPan.startX
+        const dy = e.clientY - touchPan.startY
+        if (!touchPan.moved && Math.hypot(dx, dy) > 4) {
+          touchPan.moved = true
+          setSelectedIds(new Set())
+          onSelect(null)
+        }
+        if (touchPan.moved) {
+          setCamera((cam) => ({
+            ...cam,
+            x: touchPan.originX + dx,
+            y: touchPan.originY + dy,
+          }))
+        }
         return
       }
 
@@ -591,8 +723,23 @@ export function PuzzleBoard({
     }
 
     const onUp = (e: PointerEvent) => {
+      touchPointsRef.current.delete(e.pointerId)
+      if (pinchRef.current?.pointerIds.includes(e.pointerId)) {
+        pinchRef.current = null
+      }
+
       if (safeDragRef.current?.pointerId === e.pointerId) {
         safeDragRef.current = null
+        return
+      }
+
+      const touchPan = touchPanRef.current
+      if (touchPan && touchPan.pointerId === e.pointerId) {
+        touchPanRef.current = null
+        if (!touchPan.moved) {
+          setSelectedIds(new Set())
+          onSelect(null)
+        }
         return
       }
 
