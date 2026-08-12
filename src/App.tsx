@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { bind } from 'cuelume'
 import { PuzzleBoard } from './components/PuzzleBoard'
 import { Sidebar } from './components/Sidebar'
 import { PIECE_PRESETS, PUZZLES } from './puzzle/catalog'
@@ -10,6 +11,10 @@ function App() {
   const [presetIndex, setPresetIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    bind()
+  }, [])
 
   const puzzle = useMemo(
     () => PUZZLES.find((p) => p.id === puzzleId) ?? PUZZLES[0],

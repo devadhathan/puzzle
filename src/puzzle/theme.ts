@@ -1,4 +1,4 @@
-export type Surface = 'grid' | 'cloth' | 'dark'
+export type Surface = 'grid' | 'cloth' | 'dark' | 'polka'
 
 export function formatTimer(ms: number): string {
   const total = Math.floor(ms / 1000)

@@ -51,8 +51,8 @@
   pointer-events: auto;
 }
 
-.sidebar-inner {
-  padding: 1.15rem 1.15rem 1.25rem;
+/* Frost shell separate from scroll — overflow + backdrop-filter on same node breaks scroll */
+.sidebar-shell {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.55);
@@ -61,14 +61,21 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(56px) saturate(1.6);
   -webkit-backdrop-filter: blur(56px) saturate(1.6);
+  overflow: hidden;
+  max-height: min(70vh, 560px);
+}
+
+.sidebar-inner {
+  padding: 1.15rem 1.15rem 1.25rem;
   color: #1a1a1a;
-  max-height: min(58vh, 520px);
+  max-height: min(70vh, 560px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  touch-action: pan-y;
 }
 
 .sidebar-inner::-webkit-scrollbar {
@@ -121,11 +128,24 @@
 .puzzle-item {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  transition:
+    border-color 0.28s ease,
+    background 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.puzzle-item:hover {
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .puzzle-item.is-active {
-  gap: 0.55rem;
+  border-color: rgba(0, 122, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.25);
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .puzzle-card {
@@ -135,22 +155,16 @@
   align-items: center;
   width: 100%;
   padding: 0.4rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  color: inherit;
 }
 
 .puzzle-card:hover {
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.puzzle-card.is-active {
-  border-color: rgba(0, 122, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.25);
-  background: rgba(255, 255, 255, 0.62);
+  background: transparent;
 }
 
 .puzzle-thumb {
@@ -188,26 +202,38 @@
   letter-spacing: 0.02em;
 }
 
-.piece-block {
-  margin: 0;
-  padding: 0.75rem 0.85rem 0.7rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  color: rgba(0, 0, 0, 0.55);
-  animation: piece-block-in 0.22s ease both;
+/* Smooth expand/collapse of the difficulty slider inside the card */
+.piece-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes piece-block-in {
-  from {
-    opacity: 0;
-    margin-top: -4px;
-  }
-  to {
-    opacity: 1;
-    margin-top: 0;
-  }
+.puzzle-item.is-active .piece-expand {
+  grid-template-rows: 1fr;
+}
+
+.piece-expand-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.piece-block {
+  margin: 0;
+  padding: 0.15rem 0.85rem 0.85rem;
+  color: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.28s ease 0.04s,
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.puzzle-item.is-active .piece-block {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .slider-labels {

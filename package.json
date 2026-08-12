@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
+    "cuelume": "^0.2.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

@@ -1,15 +1,6 @@
-let joinAudio: HTMLAudioElement | null = null
-let moveAudio: HTMLAudioElement | null = null
-let musicAudio: HTMLAudioElement | null = null
+import { play } from 'cuelume'
 
-function getJoin() {
-  if (!joinAudio) {
-    joinAudio = new Audio('/join.mp3')
-    joinAudio.preload = 'auto'
-    joinAudio.volume = 0.85
-  }
-  return joinAudio
-}
+let moveAudio: HTMLAudioElement | null = null
 
 function getMove() {
   if (!moveAudio) {
@@ -20,28 +11,12 @@ function getMove() {
   return moveAudio
 }
 
-function getMusic() {
-  if (!musicAudio) {
-    musicAudio = new Audio('/music.mp3')
-    musicAudio.preload = 'auto'
-    musicAudio.loop = true
-    musicAudio.volume = 0.35
-  }
-  return musicAudio
-}
-
-/** SoundShelf UI checkbox/toggle tick — join + UI click */
+/** Pieces snapped together — cuelume mechanical toggle */
 export function playJoinClick() {
-  try {
-    const a = getJoin()
-    a.pause()
-    a.currentTime = 0
-    void a.play()
-  } catch {
-    // optional
-  }
+  play('toggle', { volume: 1 })
 }
 
+/** Cloth rustle — 3–4s of freesound_community-cloth-6857 */
 export function playMoveSound() {
   try {
     const a = getMove()
@@ -53,35 +28,17 @@ export function playMoveSound() {
   }
 }
 
-export function setMusicPlaying(playing: boolean) {
-  try {
-    const a = getMusic()
-    if (playing) {
-      void a.play()
-    } else {
-      a.pause()
-    }
-  } catch {
-    // optional
-  }
-}
-
-export function isMusicPlaying() {
-  return !!musicAudio && !musicAudio.paused
-}
-
 export function unlockAudio() {
   try {
-    for (const a of [getJoin(), getMove(), getMusic()]) {
-      const wasLoop = a.loop
-      a.muted = true
-      void a.play().then(() => {
-        a.pause()
-        a.currentTime = 0
-        a.muted = false
-        a.loop = wasLoop
-      })
-    }
+    // Prime cuelume's AudioContext during a real user gesture
+    play('toggle', { volume: 0.001 })
+    const a = getMove()
+    a.muted = true
+    void a.play().then(() => {
+      a.pause()
+      a.currentTime = 0
+      a.muted = false
+    })
   } catch {
     // optional
   }

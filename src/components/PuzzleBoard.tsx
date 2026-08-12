@@ -11,7 +11,7 @@ import {
   rotateGroup,
   tryJoinGroups,
 } from '../puzzle/engine'
-import { playJoinClick, playMoveSound, setMusicPlaying, unlockAudio } from '../puzzle/sound'
+import { playJoinClick, playMoveSound, unlockAudio } from '../puzzle/sound'
 import { formatTimer, type Surface } from '../puzzle/theme'
 import './PuzzleBoard.css'
 
@@ -66,7 +66,53 @@ const SURFACES: { id: Surface; label: string }[] = [
   { id: 'grid', label: 'Grid' },
   { id: 'cloth', label: 'Cloth' },
   { id: 'dark', label: 'Dark' },
+  { id: 'polka', label: 'Polka' },
 ]
+
+function SurfaceIcon({ id }: { id: Surface }) {
+  if (id === 'grid') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M2.5 7.5h13M2.5 11.5h13M7.5 2.5v13M11.5 2.5v13" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    )
+  }
+  if (id === 'cloth') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+        <path
+          d="M3 8c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0M3 12c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  }
+  if (id === 'dark') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+        <path
+          d="M10.8 4.2a4.8 4.8 0 1 0 3 8.2 5.2 5.2 0 1 1-3-8.2z"
+          fill="currentColor"
+        />
+      </svg>
+    )
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="6" cy="6" r="1.15" fill="currentColor" />
+      <circle cx="12" cy="6" r="1.15" fill="currentColor" />
+      <circle cx="9" cy="9.5" r="1.15" fill="currentColor" />
+      <circle cx="6" cy="13" r="1.15" fill="currentColor" />
+      <circle cx="12" cy="13" r="1.15" fill="currentColor" />
+    </svg>
+  )
+}
 
 function rectsOverlap(
   a: { x: number; y: number; w: number; h: number },
@@ -108,7 +154,6 @@ export function PuzzleBoard({
   const [elapsed, setElapsed] = useState(0)
   const [running, setRunning] = useState(false)
   const [done, setDone] = useState(false)
-  const [musicOn, setMusicOn] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [rotating, setRotating] = useState(false)
   const [hoverFlipId, setHoverFlipId] = useState<string | null>(null)
@@ -120,6 +165,15 @@ export function PuzzleBoard({
   const [safeZone, setSafeZone] = useState<SafeZone | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [surfaceMenuOpen, setSurfaceMenuOpen] = useState(false)
+  const surfaceMenuRef = useRef<HTMLDivElement>(null)
+  const [gridLines, setGridLines] = useState<{
+    w: number
+    h: number
+    xs: number[]
+    ys: number[]
+    stroke: string
+  } | null>(null)
   const animTimer = useRef<number | null>(null)
   const rotateTimer = useRef<number | null>(null)
 
@@ -364,15 +418,39 @@ export function PuzzleBoard({
     }
 
     const onWheel = (e: WheelEvent) => {
+      // Let the menu / dock / ref panel scroll natively
+      const el = e.target as Element | null
+      if (el?.closest?.('#puzzle-sidebar, .sidebar-inner, .bottom-dock, .ref-panel')) {
+        return
+      }
+
       e.preventDefault()
       e.stopPropagation()
+
+      let dx = e.deltaX
+      let dy = e.deltaY
+      if (e.deltaMode === 1) {
+        dx *= 16
+        dy *= 16
+      } else if (e.deltaMode === 2) {
+        dx *= window.innerWidth
+        dy *= window.innerHeight
+      }
+
+      // Pinch / ctrl|cmd+wheel → zoom; plain two-finger / wheel → pan
+      const isZoom = e.ctrlKey || e.metaKey
+      if (!isZoom) {
+        setCamera((cam) => ({
+          ...cam,
+          x: cam.x - dx,
+          y: cam.y - dy,
+        }))
+        return
+      }
+
       const rect = vp.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
-
-      let dy = e.deltaY
-      if (e.deltaMode === 1) dy *= 16
-      if (e.deltaMode === 2) dy *= window.innerHeight
 
       const cam = cameraRef.current
       const anim = zoomAnimRef.current
@@ -400,6 +478,35 @@ export function PuzzleBoard({
       }
     }
   }, [ready])
+
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+
+    const TARGET = 40
+    const fitGrid = () => {
+      const w = vp.clientWidth
+      const h = vp.clientHeight
+      if (w < 8 || h < 8) return
+      const cols = Math.max(1, Math.round(w / TARGET))
+      const rows = Math.max(1, Math.round(h / TARGET))
+      // Internal lines only (no line on the border edges)
+      const xs: number[] = []
+      const ys: number[] = []
+      for (let i = 1; i < cols; i++) xs.push(Math.round((w * i) / cols))
+      for (let i = 1; i < rows; i++) ys.push(Math.round((h * i) / rows))
+      const strokeEl = vp.querySelector('.viewport-canvas') ?? vp
+      const stroke =
+        getComputedStyle(strokeEl).getPropertyValue('--grid-line').trim() ||
+        'rgba(0, 0, 0, 0.1)'
+      setGridLines({ w, h, xs, ys, stroke })
+    }
+
+    fitGrid()
+    const ro = new ResizeObserver(fitGrid)
+    ro.observe(vp)
+    return () => ro.disconnect()
+  }, [ready, surface])
 
   const onViewportPointerDown = (e: React.PointerEvent) => {
     // Plain empty click → deselect only (canvas stays put)
@@ -548,19 +655,19 @@ export function PuzzleBoard({
       setDragging(false)
 
       const size = pieceSizeRef.current
-      setPieces((prev) => {
-        if (drag.mode === 'piece' && drag.groupId) {
-          const result = tryJoinGroups(prev, drag.groupId, size, SNAP_THRESHOLD)
-          if (result.joined && result.joinedPair) {
-            playJoinClick()
-            setFlashIds(result.joinedPair)
-            window.setTimeout(() => setFlashIds([]), 420)
-            if (result.joinPoint) spawnBurst(result.joinPoint.x, result.joinPoint.y)
-          }
-          return finishIfComplete(result.pieces)
+      if (drag.mode === 'piece' && drag.groupId) {
+        // Join + sound outside setState so Web Audio stays in the user-gesture window
+        const result = tryJoinGroups(piecesRef.current, drag.groupId, size, SNAP_THRESHOLD)
+        if (result.joined && result.joinedPair) {
+          playJoinClick()
+          setFlashIds(result.joinedPair)
+          window.setTimeout(() => setFlashIds([]), 420)
+          if (result.joinPoint) spawnBurst(result.joinPoint.x, result.joinPoint.y)
         }
-        return finishIfComplete(prev)
-      })
+        setPieces(finishIfComplete(result.pieces))
+        return
+      }
+      setPieces((prev) => finishIfComplete(prev))
     }
 
     window.addEventListener('pointermove', onMove)
@@ -822,19 +929,23 @@ export function PuzzleBoard({
     }
   }, [done])
 
-  const cycleSurface = () => {
-    const i = SURFACES.findIndex((s) => s.id === surface)
-    setSurface(SURFACES[(i + 1) % SURFACES.length].id)
+  const setSurfaceOnly = (next: Surface) => {
+    // Background only — never touches piece positions / joins
+    if (next !== surface) setSurface(next)
+    setSurfaceMenuOpen(false)
   }
 
-  const toggleMusic = () => {
-    unlockAudio()
-    setMusicOn((prev) => {
-      const next = !prev
-      setMusicPlaying(next)
-      return next
-    })
-  }
+  useEffect(() => {
+    if (!surfaceMenuOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node | null
+      if (!t) return
+      if (surfaceMenuRef.current?.contains(t)) return
+      setSurfaceMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [surfaceMenuOpen])
 
   const handleRotateSelected = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -876,6 +987,43 @@ export function PuzzleBoard({
         className={`viewport ${ready ? 'is-ready' : ''} ${spaceDown ? 'is-panning' : ''} ${dragging ? 'is-dragging' : ''}`}
         onPointerDown={onViewportPointerDown}
       >
+        {/* Canvas backdrop only — never moves/resets pieces */}
+        <div className={`viewport-canvas canvas-${surface}`} aria-hidden>
+          {(surface === 'grid' || surface === 'dark') && gridLines && (
+            <svg
+              className="viewport-grid"
+              width={gridLines.w}
+              height={gridLines.h}
+              viewBox={`0 0 ${gridLines.w} ${gridLines.h}`}
+            >
+              {gridLines.xs.map((x) => (
+                <line
+                  key={`v-${x}`}
+                  x1={x}
+                  y1={0}
+                  x2={x}
+                  y2={gridLines.h}
+                  stroke={gridLines.stroke}
+                  strokeWidth={1}
+                  shapeRendering="crispEdges"
+                />
+              ))}
+              {gridLines.ys.map((y) => (
+                <line
+                  key={`h-${y}`}
+                  x1={0}
+                  y1={y}
+                  x2={gridLines.w}
+                  y2={y}
+                  stroke={gridLines.stroke}
+                  strokeWidth={1}
+                  shapeRendering="crispEdges"
+                />
+              ))}
+            </svg>
+          )}
+        </div>
+
         <div
           className="world"
           style={{
@@ -1075,6 +1223,7 @@ export function PuzzleBoard({
                 onClick={onOpenMenu}
                 title="Puzzle menu"
                 aria-expanded={menuOpen}
+                data-cuelume-toggle
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
                   <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -1087,12 +1236,13 @@ export function PuzzleBoard({
             className={`fig-btn ${safeOn ? 'is-on' : ''}`}
             onClick={toggleSafeZone}
             title={safeOn ? 'Hide safe zone' : 'Show safe zone'}
+            data-cuelume-toggle
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <rect x="3.5" y="3.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
           </button>
-          <button type="button" className="fig-btn" onClick={handleShuffle} title="Shuffle">
+          <button type="button" className="fig-btn" onClick={handleShuffle} title="Shuffle" data-cuelume-press data-cuelume-release>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               <path
                 d="M2.5 4.5h4L9 9l2.5-4.5h4M2.5 13.5h4L9 9l2.5 4.5h4"
@@ -1107,41 +1257,49 @@ export function PuzzleBoard({
 
         <span className="fig-sep" aria-hidden />
 
-        <div className="fig-cluster">
-          <button type="button" className="fig-btn" onClick={cycleSurface} title="Background">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <rect x="2.5" y="3.5" width="13" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M2.5 11.5l3.5-3 2.5 2.5 3-3.5 3.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-            </svg>
-            <span className="fig-label">{SURFACES.find((s) => s.id === surface)?.label}</span>
-          </button>
+        <div className="fig-surface-wrap" ref={surfaceMenuRef}>
           <button
             type="button"
-            className={`fig-btn ${musicOn ? 'is-on' : ''}`}
-            onClick={toggleMusic}
-            title={musicOn ? 'Mute music' : 'Play music'}
+            className={`fig-btn fig-surface-trigger ${surfaceMenuOpen ? 'is-on' : ''}`}
+            onClick={() => setSurfaceMenuOpen((v) => !v)}
+            title="Canvas background"
+            aria-expanded={surfaceMenuOpen}
+            aria-haspopup="listbox"
+            data-cuelume-toggle
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              {musicOn ? (
-                <>
-                  <path d="M4 11.5V6.5h3.2L12 3.5v11L7.2 11.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                  <path d="M13.5 7.2c.7.6.7 2 0 2.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </>
-              ) : (
-                <>
-                  <path d="M4 11.5V6.5h3.2L12 3.5v11L7.2 11.5H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                  <path d="M13.2 7.2l2.6 2.6M15.8 7.2l-2.6 2.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </>
-              )}
+            <SurfaceIcon id={surface} />
+            <svg className="fig-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+              <path d="M2.2 3.6L5 6.4l2.8-2.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <button type="button" className="fig-btn" onClick={handleReset} title="Reset">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <path d="M14.5 9A5.5 5.5 0 1 1 12.2 4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M12 2.5v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+
+          {surfaceMenuOpen && (
+            <div className="fig-surface-menu" role="listbox" aria-label="Canvas background">
+              {SURFACES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="option"
+                  aria-selected={surface === s.id}
+                  className={`fig-surface-option ${surface === s.id ? 'is-active' : ''}`}
+                  onClick={() => setSurfaceOnly(s.id)}
+                  data-cuelume-press
+                  data-cuelume-release
+                >
+                  <SurfaceIcon id={s.id} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        <button type="button" className="fig-btn" onClick={handleReset} title="Reset" data-cuelume-press data-cuelume-release>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M14.5 9A5.5 5.5 0 1 1 12.2 4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M12 2.5v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
 
         <span className="fig-sep" aria-hidden />
 
@@ -1172,6 +1330,7 @@ export function PuzzleBoard({
               className={`ref-btn ${showPreview ? 'is-open' : ''}`}
               onClick={() => setShowPreview((v) => !v)}
               title={showPreview ? 'Hide reference' : 'Show reference'}
+              data-cuelume-toggle
             >
               <img src={previewUrl} alt="Puzzle reference" draggable={false} />
             </button>

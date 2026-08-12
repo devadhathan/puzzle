@@ -28,6 +28,8 @@ export function Sidebar({
   const max = PIECE_PRESETS.length - 1
   const fillPct = max === 0 ? 0 : (presetIndex / max) * 100
   const panelRef = useRef<HTMLElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const activeItemRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState({ left: 16, bottom: 80 })
 
   useLayoutEffect(() => {
@@ -52,6 +54,15 @@ export function Sidebar({
     }
   }, [open, anchorRef])
 
+  // Keep the selected puzzle in view when opening / changing image — once, not every render
+  useEffect(() => {
+    if (!open) return
+    const id = window.requestAnimationFrame(() => {
+      activeItemRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [open, puzzleId])
+
   useEffect(() => {
     if (!open) return
 
@@ -67,6 +78,18 @@ export function Sidebar({
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open, onToggle, anchorRef])
 
+  // Stop board zoom/pan from eating trackpad scrolls over the menu
+  useEffect(() => {
+    if (!open) return
+    const node = scrollRef.current
+    if (!node) return
+    const onWheel = (e: WheelEvent) => {
+      e.stopPropagation()
+    }
+    node.addEventListener('wheel', onWheel, { passive: true })
+    return () => node.removeEventListener('wheel', onWheel)
+  }, [open])
+
   const panel = (
     <aside
       ref={panelRef}
@@ -75,82 +98,97 @@ export function Sidebar({
       aria-hidden={!open}
       style={{ left: pos.left, bottom: pos.bottom }}
     >
-      <div className="sidebar-inner">
-        <div className="sidebar-top">
-          <div>
-            <p className="sidebar-kicker">Puzzle</p>
-            <h2 className="sidebar-title">Choose image</h2>
+      <div className="sidebar-shell">
+        <div className="sidebar-inner" ref={scrollRef}>
+          <div className="sidebar-top">
+            <div>
+              <p className="sidebar-kicker">Puzzle</p>
+              <h2 className="sidebar-title">Choose image</h2>
+            </div>
+            <span className="piece-pill">{preset.pieces} pcs</span>
           </div>
-          <span className="piece-pill">{preset.pieces} pcs</span>
-        </div>
 
-        <div className="puzzle-list" role="listbox" aria-label="Puzzle images">
-          {PUZZLES.map((p) => {
-            const active = p.id === puzzleId
-            return (
-              <div key={p.id} className={`puzzle-item ${active ? 'is-active' : ''}`}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  className={`puzzle-card ${active ? 'is-active' : ''}`}
-                  onClick={() => onPuzzleChange(p.id)}
+          <div className="puzzle-list" role="listbox" aria-label="Puzzle images">
+            {PUZZLES.map((p) => {
+              const active = p.id === puzzleId
+              return (
+                <div
+                  key={p.id}
+                  ref={active ? activeItemRef : undefined}
+                  className={`puzzle-item ${active ? 'is-active' : ''}`}
                 >
-                  <span className="puzzle-thumb">
-                    <img src={p.src} alt="" />
-                  </span>
-                  <span className="puzzle-meta">
-                    <span className="puzzle-name">{p.title}</span>
-                    <span className="puzzle-artist">{p.artist}</span>
-                  </span>
-                </button>
-
-                {active && (
-                  <div
-                    className="piece-block"
-                    ref={(node) => {
-                      node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-                    }}
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    className="puzzle-card"
+                    onClick={() => onPuzzleChange(p.id)}
+                    data-cuelume-press
+                    data-cuelume-release
+                    data-cuelume-hover="tick"
                   >
-                    <div className="slider-labels">
-                      <span>Easy</span>
-                      <span>Medium</span>
-                      <span>Hard</span>
-                    </div>
+                    <span className="puzzle-thumb">
+                      <img src={p.src} alt="" />
+                    </span>
+                    <span className="puzzle-meta">
+                      <span className="puzzle-name">{p.title}</span>
+                      <span className="puzzle-artist">{p.artist}</span>
+                    </span>
+                  </button>
 
-                    <div className="slider-shell">
-                      <div className="slider-track" aria-hidden>
-                        <div className="slider-fill" style={{ width: `${fillPct}%` }} />
-                        <div className="slider-ticks">
-                          {PIECE_PRESETS.map((_, i) => (
-                            <span
-                              key={i}
-                              className={`slider-tick ${i <= presetIndex ? 'is-on' : ''}`}
-                            />
-                          ))}
+                  <div className="piece-expand" aria-hidden={!active}>
+                    <div className="piece-expand-inner">
+                      <div className="piece-block">
+                        <div className="slider-labels">
+                          <span>Easy</span>
+                          <span>Medium</span>
+                          <span>Hard</span>
                         </div>
-                      </div>
-                      <input
-                        id="piece-slider"
-                        className="piece-slider"
-                        type="range"
-                        min={0}
-                        max={max}
-                        step={1}
-                        value={presetIndex}
-                        onChange={(e) => onPresetChange(Number(e.target.value))}
-                        aria-label="Number of pieces"
-                      />
-                    </div>
 
-                    <p className="piece-grid">
-                      {preset.cols} × {preset.rows} · {preset.pieces} pieces
-                    </p>
+                        <div className="slider-shell">
+                          <div className="slider-track" aria-hidden>
+                            <div
+                              className="slider-fill"
+                              style={{ width: active ? `${fillPct}%` : '0%' }}
+                            />
+                            <div className="slider-ticks">
+                              {PIECE_PRESETS.map((_, i) => (
+                                <span
+                                  key={i}
+                                  className={`slider-tick ${
+                                    active && i <= presetIndex ? 'is-on' : ''
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <input
+                            id={active ? 'piece-slider' : undefined}
+                            className="piece-slider"
+                            type="range"
+                            min={0}
+                            max={max}
+                            step={1}
+                            value={active ? presetIndex : 0}
+                            disabled={!active}
+                            tabIndex={active ? 0 : -1}
+                            onChange={(e) => onPresetChange(Number(e.target.value))}
+                            aria-label="Number of pieces"
+                          />
+                        </div>
+
+                        <p className="piece-grid">
+                          {active
+                            ? `${preset.cols} × ${preset.rows} · ${preset.pieces} pieces`
+                            : '\u00a0'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            )
-          })}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </aside>
