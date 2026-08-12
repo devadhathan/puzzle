@@ -4,6 +4,7 @@
   height: 100dvh;
   width: 100%;
   overflow: hidden;
+  isolation: isolate;
   --ink: rgba(0, 0, 0, 0.72);
   --ink-soft: rgba(0, 0, 0, 0.45);
   --glass: rgba(255, 255, 255, 0.5);
@@ -11,6 +12,7 @@
   --glass-shadow: rgba(0, 0, 0, 0.1);
   --burst: #111;
   --canvas-pad: 28px;
+  --dock-clearance: 0px;
   /* White margin around the gridded canvas */
   background: #ffffff;
   color: var(--ink);
@@ -89,7 +91,12 @@
 
 .viewport {
   position: absolute;
-  inset: var(--canvas-pad);
+  top: var(--canvas-pad);
+  right: var(--canvas-pad);
+  bottom: calc(var(--canvas-pad) + var(--dock-clearance));
+  left: var(--canvas-pad);
+  z-index: 1;
+  isolation: isolate;
   touch-action: none;
   cursor: default;
   opacity: 0;
@@ -178,8 +185,8 @@
   width: 0;
   height: 0;
   transform-origin: 0 0;
-  will-change: transform;
-  transform-style: preserve-3d;
+  /* Keep 3D piece layers inside the viewport — avoid covering dock/menus */
+  transform-style: flat;
   z-index: 1;
 }
 
@@ -384,11 +391,12 @@
 
 .ref-controls {
   position: relative;
-  z-index: 45;
+  z-index: 55;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .ref-btn {
@@ -512,15 +520,33 @@
   display: none;
 }
 
-.bottom-dock {
+.bottom-chrome {
   position: absolute;
   left: 50%;
   bottom: 1.25rem;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.55rem;
+  max-width: calc(100% - 1.5rem);
+  pointer-events: none;
+}
+
+.bottom-chrome > * {
+  pointer-events: auto;
+}
+
+.bottom-dock {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: 0.55rem;
+  min-width: 0;
 }
 
 .fig-bar {
@@ -606,11 +632,44 @@
 }
 
 .surface-dark .fig-surface-menu,
-.surface-cloth .fig-surface-menu {
+.surface-cloth .fig-surface-menu,
+.fig-surface-menu.surface-menu-dark,
+.fig-surface-menu.surface-menu-cloth {
   background: rgba(24, 24, 26, 0.9);
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+}
+
+/* Portaled overlays — always above the canvas */
+.fig-surface-menu.is-portal,
+.fig-about-panel.is-portal,
+.ref-panel.is-portal {
+  position: fixed;
+  z-index: 10050;
+  transform: translateZ(0);
+}
+
+.fig-surface-menu.is-portal {
+  left: 50%;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateZ(0);
+}
+
+.fig-about-panel.is-portal {
+  left: 50%;
+  right: auto;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateZ(0);
+  width: min(260px, calc(100vw - 24px));
+}
+
+.ref-panel.is-portal {
+  right: 0.75rem;
+  left: auto;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  width: min(72vw, 240px);
+  max-height: min(48vh, 280px);
 }
 
 .fig-about-wrap {
@@ -638,7 +697,11 @@
 }
 
 .surface-dark .fig-about-panel,
-.surface-cloth .fig-about-panel {
+.surface-cloth .fig-about-panel,
+.fig-about-panel.surface-menu-dark,
+.fig-about-panel.surface-menu-cloth,
+.ref-panel.surface-menu-dark,
+.ref-panel.surface-menu-cloth {
   background: rgba(24, 24, 26, 0.92);
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.9);
@@ -704,7 +767,9 @@
 }
 
 .surface-dark .fig-surface-option:hover,
-.surface-cloth .fig-surface-option:hover {
+.surface-cloth .fig-surface-option:hover,
+.surface-menu-dark .fig-surface-option:hover,
+.surface-menu-cloth .fig-surface-option:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -714,7 +779,9 @@
 }
 
 .surface-dark .fig-surface-option.is-active,
-.surface-cloth .fig-surface-option.is-active {
+.surface-cloth .fig-surface-option.is-active,
+.surface-menu-dark .fig-surface-option.is-active,
+.surface-menu-cloth .fig-surface-option.is-active {
   background: rgba(10, 132, 255, 0.22);
   color: #6cb6ff;
 }
@@ -1054,27 +1121,29 @@
 
   .board-shell {
     --canvas-pad: 8px;
+    --dock-clearance: calc(3.75rem + env(safe-area-inset-bottom, 0px));
   }
 
-  .bottom-dock {
+  .bottom-chrome {
     left: 0;
     right: 0;
     bottom: 0;
-    transform: none;
+    transform: translateZ(0);
     width: 100%;
-    justify-content: flex-start;
+    max-width: none;
     gap: 0.4rem;
     padding: 0.45rem 0.55rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    touch-action: pan-x;
+    align-items: flex-end;
+    z-index: 200;
   }
 
-  .bottom-dock::-webkit-scrollbar {
-    display: none;
+  .bottom-dock {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    overflow: visible;
   }
 
   .fig-bar {
@@ -1113,38 +1182,13 @@
     display: none;
   }
 
-  .fig-about-panel {
-    position: fixed;
-    right: auto;
-    left: 50%;
-    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    width: min(260px, calc(100vw - 24px));
-  }
-
-  .fig-surface-menu {
-    position: fixed;
-    left: 50%;
-    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-  }
-
   .ref-controls {
-    flex: 0 0 auto;
-    margin-left: auto;
+    margin-bottom: 0.1rem;
   }
 
   .ref-btn {
     width: 42px;
     height: 42px;
-  }
-
-  .ref-panel {
-    position: fixed;
-    right: 0.55rem;
-    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-    width: min(70vw, 200px);
-    max-height: min(36vh, 220px);
   }
 
   .piece-tool {

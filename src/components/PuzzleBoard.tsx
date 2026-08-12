@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import confetti from 'canvas-confetti'
 import {
   ArrowClockwise,
@@ -143,8 +144,11 @@ export function PuzzleBoard({
   const [showPreview, setShowPreview] = useState(false)
   const [surfaceMenuOpen, setSurfaceMenuOpen] = useState(false)
   const surfaceMenuRef = useRef<HTMLDivElement>(null)
+  const surfaceMenuPanelRef = useRef<HTMLDivElement>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
   const aboutRef = useRef<HTMLDivElement>(null)
+  const aboutPanelRef = useRef<HTMLDivElement>(null)
+  const refPanelRef = useRef<HTMLDivElement>(null)
   const [gridLines, setGridLines] = useState<{
     w: number
     h: number
@@ -1066,6 +1070,7 @@ export function PuzzleBoard({
       const t = e.target as Node | null
       if (!t) return
       if (surfaceMenuRef.current?.contains(t)) return
+      if (surfaceMenuPanelRef.current?.contains(t)) return
       setSurfaceMenuOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
@@ -1078,11 +1083,25 @@ export function PuzzleBoard({
       const t = e.target as Node | null
       if (!t) return
       if (aboutRef.current?.contains(t)) return
+      if (aboutPanelRef.current?.contains(t)) return
       setAboutOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [aboutOpen])
+
+  useEffect(() => {
+    if (!showPreview) return
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node | null
+      if (!t) return
+      if (refPanelRef.current?.contains(t)) return
+      if ((t as Element).closest?.('.ref-btn')) return
+      setShowPreview(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [showPreview])
 
   const handleRotateSelected = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -1334,6 +1353,7 @@ export function PuzzleBoard({
         </div>
       </div>
 
+      <div className="bottom-chrome">
       <div className="bottom-dock">
         <nav className="fig-bar" aria-label="Controls">
         <div className="fig-cluster">
@@ -1375,6 +1395,7 @@ export function PuzzleBoard({
             onClick={() => {
               setSurfaceMenuOpen((v) => !v)
               setAboutOpen(false)
+              setShowPreview(false)
             }}
             title="Canvas background"
             aria-expanded={surfaceMenuOpen}
@@ -1384,9 +1405,16 @@ export function PuzzleBoard({
             <SurfaceIcon id={surface} />
             <CaretDown className="fig-chevron" size={12} weight="bold" aria-hidden />
           </button>
+        </div>
 
-          {surfaceMenuOpen && (
-            <div className="fig-surface-menu" role="listbox" aria-label="Canvas background">
+        {surfaceMenuOpen &&
+          createPortal(
+            <div
+              ref={surfaceMenuPanelRef}
+              className={`fig-surface-menu is-portal surface-menu-${surface}`}
+              role="listbox"
+              aria-label="Canvas background"
+            >
               {SURFACES.map((s) => (
                 <button
                   key={s.id}
@@ -1402,9 +1430,9 @@ export function PuzzleBoard({
                   <span>{s.label}</span>
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body,
           )}
-        </div>
 
         <button type="button" className="fig-btn" onClick={handleReset} title="Reset" data-cuelume-press data-cuelume-release>
           <ArrowClockwise size={18} weight="regular" aria-hidden />
@@ -1432,6 +1460,7 @@ export function PuzzleBoard({
             onClick={() => {
               setAboutOpen((v) => !v)
               setSurfaceMenuOpen(false)
+              setShowPreview(false)
             }}
             title="About me"
             aria-expanded={aboutOpen}
@@ -1440,46 +1469,67 @@ export function PuzzleBoard({
           >
             <Info size={18} weight="regular" aria-hidden />
           </button>
-
-          {aboutOpen && (
-            <div className="fig-about-panel" role="dialog" aria-label="About me">
-              <p className="fig-about-kicker">Made by</p>
-              <p className="fig-about-name">Devadhathan</p>
-              <p className="fig-about-bio">
-                Product designer. Tiny details, calm interfaces, and the occasional puzzle.
-              </p>
-              <a
-                className="fig-about-link"
-                href="https://www.devadhathan.com"
-                target="_blank"
-                rel="noreferrer"
-              >
-                About me →
-              </a>
-            </div>
-          )}
         </div>
       </nav>
-
-        {previewUrl && (
-          <div className="ref-controls">
-            {showPreview && (
-              <div className="ref-panel" role="dialog" aria-label="Reference image">
-                <img src={previewUrl} alt="Full puzzle preview" draggable={false} />
-              </div>
-            )}
-            <button
-              type="button"
-              className={`ref-btn ${showPreview ? 'is-open' : ''}`}
-              onClick={() => setShowPreview((v) => !v)}
-              title={showPreview ? 'Hide reference' : 'Show reference'}
-              data-cuelume-toggle
-            >
-              <img src={previewUrl} alt="Puzzle reference" draggable={false} />
-            </button>
-          </div>
-        )}
       </div>
+
+      {previewUrl && (
+        <div className="ref-controls">
+          <button
+            type="button"
+            className={`ref-btn ${showPreview ? 'is-open' : ''}`}
+            onClick={() => {
+              setShowPreview((v) => !v)
+              setSurfaceMenuOpen(false)
+              setAboutOpen(false)
+            }}
+            title={showPreview ? 'Hide reference' : 'Show reference'}
+            data-cuelume-toggle
+          >
+            <img src={previewUrl} alt="Puzzle reference" draggable={false} />
+          </button>
+        </div>
+      )}
+      </div>
+
+      {aboutOpen &&
+        createPortal(
+          <div
+            ref={aboutPanelRef}
+            className={`fig-about-panel is-portal surface-menu-${surface}`}
+            role="dialog"
+            aria-label="About me"
+          >
+            <p className="fig-about-kicker">Made by</p>
+            <p className="fig-about-name">Devadhathan</p>
+            <p className="fig-about-bio">
+              Product designer. Tiny details, calm interfaces, and the occasional puzzle.
+            </p>
+            <a
+              className="fig-about-link"
+              href="https://www.devadhathan.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              About me →
+            </a>
+          </div>,
+          document.body,
+        )}
+
+      {showPreview &&
+        previewUrl &&
+        createPortal(
+          <div
+            ref={refPanelRef}
+            className={`ref-panel is-portal surface-menu-${surface}`}
+            role="dialog"
+            aria-label="Reference image"
+          >
+            <img src={previewUrl} alt="Full puzzle preview" draggable={false} />
+          </div>,
+          document.body,
+        )}
 
       {done && (
         <div className="complete-banner" role="status">

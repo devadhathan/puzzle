@@ -30,7 +30,7 @@
 
 .sidebar {
   position: fixed;
-  z-index: 80;
+  z-index: 10000;
   width: min(340px, calc(100vw - 1.5rem));
   margin-bottom: -12px;
   opacity: 0;
@@ -41,6 +41,8 @@
     margin-bottom 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
   padding: 0;
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .sidebar.is-open {
