@@ -171,13 +171,14 @@ function slicePieceImage(
   ctx.fill(path)
   ctx.restore()
 
-  // Bevel rim — light top-left, dark bottom-right
+  // Bevel rim — light top-left, dark bottom-right (scale with texture size)
+  const lw = Math.max(1, s / 72)
   ctx.save()
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
-  ctx.lineWidth = 2.25
-  ctx.translate(-0.6, -0.6)
+  ctx.lineWidth = 2.25 * lw
+  ctx.translate(-0.6 * lw, -0.6 * lw)
   ctx.stroke(path)
   ctx.restore()
 
@@ -185,13 +186,13 @@ function slicePieceImage(
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'
-  ctx.lineWidth = 2
-  ctx.translate(0.7, 0.7)
+  ctx.lineWidth = 2 * lw
+  ctx.translate(0.7 * lw, 0.7 * lw)
   ctx.stroke(path)
   ctx.restore()
 
   ctx.strokeStyle = 'rgba(40, 30, 20, 0.22)'
-  ctx.lineWidth = 1
+  ctx.lineWidth = lw
   ctx.stroke(path)
 
   return out.toDataURL('image/png')
@@ -268,15 +269,41 @@ export async function createPuzzleFromImage(
 ): Promise<{ pieces: PuzzlePiece[]; config: PuzzleConfig; imageUrl: string }> {
   const tabSize = Math.round(pieceSize * 0.22)
   const config: PuzzleConfig = { rows, cols, pieceSize, tabSize }
-  const artW = pieceSize * cols
-  const artH = pieceSize * rows
 
   const img = await loadImage(imageUrl)
+
+  // Slice at higher resolution than on-screen piece size so zoom/retina stay sharp.
+  // Cap so hard puzzles (60+ pieces) don’t blow up memory with huge data URLs.
+  const dpr =
+    typeof window !== 'undefined'
+      ? Math.min(3, Math.max(2, Math.round(window.devicePixelRatio || 2)))
+      : 2
+  const srcW = img.naturalWidth || img.width
+  const srcH = img.naturalHeight || img.height
+  const fromSource = Math.floor(Math.min(srcW / cols, srcH / rows))
+  const ideal = Math.round(pieceSize * dpr)
+  const texPiece = Math.max(
+    pieceSize,
+    Math.min(ideal, fromSource || ideal, 256),
+  )
+  const texTab = Math.round(texPiece * 0.22)
+  const texConfig: PuzzleConfig = {
+    rows,
+    cols,
+    pieceSize: texPiece,
+    tabSize: texTab,
+  }
+
+  const artW = texPiece * cols
+  const artH = texPiece * rows
+
   const canvas = document.createElement('canvas')
   canvas.width = artW
   canvas.height = artH
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas unsupported')
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
   coverDraw(ctx, img, artW, artH)
 
   const edges = buildEdges(rows, cols)
@@ -293,8 +320,8 @@ export async function createPuzzleFromImage(
         x: c * pieceSize,
         y: r * pieceSize,
         groupId: id,
-        imageDataUrl: slicePieceImage(canvas, c, r, config, edges[r][c]),
-        backDataUrl: makeCardboardBack(edges[r][c], config),
+        imageDataUrl: slicePieceImage(canvas, c, r, texConfig, edges[r][c]),
+        backDataUrl: makeCardboardBack(edges[r][c], texConfig),
         rotation: 0,
         flipped: false,
       })
@@ -304,7 +331,7 @@ export async function createPuzzleFromImage(
   return {
     pieces,
     config,
-    imageUrl: canvas.toDataURL('image/png'),
+    imageUrl: canvas.toDataURL('image/jpeg', 0.92),
   }
 }
 

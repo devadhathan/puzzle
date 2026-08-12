@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { createPortal } from 'react-dom'
 import { List, X } from '@phosphor-icons/react'
 import { play } from 'cuelume'
-import { PIECE_PRESETS, PUZZLES, type PiecePreset } from '../puzzle/catalog'
+import { presetsFor, PUZZLES, type PiecePreset } from '../puzzle/catalog'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -26,8 +26,11 @@ export function Sidebar({
   hideToggle = false,
   anchorRef,
 }: SidebarProps) {
-  const preset: PiecePreset = PIECE_PRESETS[presetIndex]
-  const max = PIECE_PRESETS.length - 1
+  const activePuzzle = PUZZLES.find((p) => p.id === puzzleId) ?? PUZZLES[0]
+  const piecePresets = presetsFor(activePuzzle.orientation)
+  const preset: PiecePreset =
+    piecePresets[Math.min(presetIndex, piecePresets.length - 1)]
+  const max = piecePresets.length - 1
   const fillPct = max === 0 ? 0 : (presetIndex / max) * 100
   const panelRef = useRef<HTMLElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -158,7 +161,7 @@ export function Sidebar({
                               style={{ width: active ? `${fillPct}%` : '0%' }}
                             />
                             <div className="slider-ticks">
-                              {PIECE_PRESETS.map((_, i) => (
+                              {piecePresets.map((_, i) => (
                                 <span
                                   key={i}
                                   className={`slider-tick ${

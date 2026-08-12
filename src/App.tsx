@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { bind } from 'cuelume'
 import { PuzzleBoard } from './components/PuzzleBoard'
 import { Sidebar } from './components/Sidebar'
-import { PIECE_PRESETS, PUZZLES } from './puzzle/catalog'
+import { presetsFor, PUZZLES } from './puzzle/catalog'
 import './App.css'
 
 function App() {
@@ -20,7 +20,8 @@ function App() {
     () => PUZZLES.find((p) => p.id === puzzleId) ?? PUZZLES[0],
     [puzzleId],
   )
-  const preset = PIECE_PRESETS[presetIndex]
+  const presets = presetsFor(puzzle.orientation)
+  const preset = presets[Math.min(presetIndex, presets.length - 1)]
 
   return (
     <div className="app">

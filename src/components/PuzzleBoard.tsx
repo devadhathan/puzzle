@@ -5,10 +5,10 @@ import {
   CaretDown,
   CirclesFour,
   Clock,
-  FlipHorizontal,
   GridFour,
   List,
   Moon,
+  Info,
   Shuffle,
   Square,
   Waves,
@@ -143,6 +143,8 @@ export function PuzzleBoard({
   const [showPreview, setShowPreview] = useState(false)
   const [surfaceMenuOpen, setSurfaceMenuOpen] = useState(false)
   const surfaceMenuRef = useRef<HTMLDivElement>(null)
+  const [aboutOpen, setAboutOpen] = useState(false)
+  const aboutRef = useRef<HTMLDivElement>(null)
   const [gridLines, setGridLines] = useState<{
     w: number
     h: number
@@ -923,6 +925,18 @@ export function PuzzleBoard({
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [surfaceMenuOpen])
 
+  useEffect(() => {
+    if (!aboutOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node | null
+      if (!t) return
+      if (aboutRef.current?.contains(t)) return
+      setAboutOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [aboutOpen])
+
   const handleRotateSelected = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -1100,7 +1114,34 @@ export function PuzzleBoard({
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => handleFlipPiece(e, piece.id)}
                   >
-                    <FlipHorizontal size={16} weight="regular" aria-hidden />
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                      <path
+                        d="M3 4.5h7.5a2.5 2.5 0 0 1 0 5H8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M5.5 7 3 4.5 5.5 2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M13 11.5H5.5a2.5 2.5 0 0 1 0-5H8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M10.5 9 13 11.5 10.5 14"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
                 )}
               </div>
@@ -1184,7 +1225,10 @@ export function PuzzleBoard({
           <button
             type="button"
             className={`fig-btn fig-surface-trigger ${surfaceMenuOpen ? 'is-on' : ''}`}
-            onClick={() => setSurfaceMenuOpen((v) => !v)}
+            onClick={() => {
+              setSurfaceMenuOpen((v) => !v)
+              setAboutOpen(false)
+            }}
             title="Canvas background"
             aria-expanded={surfaceMenuOpen}
             aria-haspopup="listbox"
@@ -1230,6 +1274,43 @@ export function PuzzleBoard({
           <div className="fig-groups" title="Groups left">
             {groupsLeft}
           </div>
+        </div>
+
+        <span className="fig-sep" aria-hidden />
+
+        <div className="fig-about-wrap" ref={aboutRef}>
+          <button
+            type="button"
+            className={`fig-btn ${aboutOpen ? 'is-on' : ''}`}
+            onClick={() => {
+              setAboutOpen((v) => !v)
+              setSurfaceMenuOpen(false)
+            }}
+            title="About me"
+            aria-expanded={aboutOpen}
+            aria-haspopup="dialog"
+            data-cuelume-toggle
+          >
+            <Info size={18} weight="regular" aria-hidden />
+          </button>
+
+          {aboutOpen && (
+            <div className="fig-about-panel" role="dialog" aria-label="About me">
+              <p className="fig-about-kicker">Made by</p>
+              <p className="fig-about-name">Devadhathan</p>
+              <p className="fig-about-bio">
+                Product designer. Tiny details, calm interfaces, and the occasional puzzle.
+              </p>
+              <a
+                className="fig-about-link"
+                href="https://www.devadhathan.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                About me →
+              </a>
+            </div>
+          )}
         </div>
       </nav>
 
