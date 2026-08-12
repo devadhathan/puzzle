@@ -1137,7 +1137,11 @@ export function PuzzleBoard({
   }
 
   return (
-    <div className={`board-shell surface-${surface}`} data-theme={surface === 'dark' ? 'dark' : 'light'}>
+    <div
+      className={`board-shell surface-${surface}`}
+      data-theme={surface === 'dark' ? 'dark' : 'light'}
+      onPointerDownCapture={() => unlockAudio()}
+    >
       <div
         ref={viewportRef}
         className={`viewport ${ready ? 'is-ready' : ''} ${spaceDown ? 'is-panning' : ''} ${dragging ? 'is-dragging' : ''}`}
