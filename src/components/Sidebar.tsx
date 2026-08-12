@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { List, X } from '@phosphor-icons/react'
+import { play } from 'cuelume'
 import { PIECE_PRESETS, PUZZLES, type PiecePreset } from '../puzzle/catalog'
 import './Sidebar.css'
 
@@ -39,8 +41,12 @@ export function Sidebar({
       const el = anchorRef?.current
       if (!el) return
       const r = el.getBoundingClientRect()
+      const menuW = Math.min(340, window.innerWidth - 24)
+      // Center on the menu icon, then nudge slightly left
+      const iconCenter = r.left + r.width / 2
+      const nudged = iconCenter - menuW / 2 - 18
       setPos({
-        left: Math.max(12, Math.min(r.left, window.innerWidth - 352)),
+        left: Math.max(12, Math.min(nudged, window.innerWidth - menuW - 12)),
         bottom: Math.max(12, window.innerHeight - r.top + 10),
       })
     }
@@ -172,7 +178,10 @@ export function Sidebar({
                             value={active ? presetIndex : 0}
                             disabled={!active}
                             tabIndex={active ? 0 : -1}
-                            onChange={(e) => onPresetChange(Number(e.target.value))}
+                            onChange={(e) => {
+                              onPresetChange(Number(e.target.value))
+                              play('tick')
+                            }}
                             aria-label="Number of pieces"
                           />
                         </div>
@@ -205,15 +214,11 @@ export function Sidebar({
           aria-controls="puzzle-sidebar"
           title={open ? 'Close menu' : 'Open menu'}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            {open ? (
-              <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            ) : (
-              <>
-                <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </>
-            )}
-          </svg>
+          {open ? (
+            <X size={18} weight="regular" aria-hidden />
+          ) : (
+            <List size={18} weight="regular" aria-hidden />
+          )}
         </button>
       )}
       {createPortal(panel, document.body)}

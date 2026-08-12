@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import confetti from 'canvas-confetti'
+import {
+  ArrowClockwise,
+  CaretDown,
+  CirclesFour,
+  Clock,
+  FlipHorizontal,
+  GridFour,
+  List,
+  Moon,
+  Shuffle,
+  Square,
+  Waves,
+} from '@phosphor-icons/react'
 import type { PuzzleConfig, PuzzlePiece } from '../puzzle/types'
 import {
   createPuzzleFromImage,
@@ -69,49 +82,12 @@ const SURFACES: { id: Surface; label: string }[] = [
   { id: 'polka', label: 'Polka' },
 ]
 
-function SurfaceIcon({ id }: { id: Surface }) {
-  if (id === 'grid') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
-        <path d="M2.5 7.5h13M2.5 11.5h13M7.5 2.5v13M11.5 2.5v13" stroke="currentColor" strokeWidth="1.2" />
-      </svg>
-    )
-  }
-  if (id === 'cloth') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
-        <path
-          d="M3 8c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0M3 12c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-        />
-      </svg>
-    )
-  }
-  if (id === 'dark') {
-    return (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-        <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
-        <path
-          d="M10.8 4.2a4.8 4.8 0 1 0 3 8.2 5.2 5.2 0 1 1-3-8.2z"
-          fill="currentColor"
-        />
-      </svg>
-    )
-  }
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2.5" y="2.5" width="13" height="13" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
-      <circle cx="6" cy="6" r="1.15" fill="currentColor" />
-      <circle cx="12" cy="6" r="1.15" fill="currentColor" />
-      <circle cx="9" cy="9.5" r="1.15" fill="currentColor" />
-      <circle cx="6" cy="13" r="1.15" fill="currentColor" />
-      <circle cx="12" cy="13" r="1.15" fill="currentColor" />
-    </svg>
-  )
+function SurfaceIcon({ id, size = 18 }: { id: Surface; size?: number }) {
+  const props = { size, weight: 'regular' as const, 'aria-hidden': true }
+  if (id === 'grid') return <GridFour {...props} />
+  if (id === 'cloth') return <Waves {...props} />
+  if (id === 'dark') return <Moon {...props} />
+  return <CirclesFour {...props} />
 }
 
 function rectsOverlap(
@@ -1112,21 +1088,7 @@ export function PuzzleBoard({
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={handleRotateSelected}
                   >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                      <path
-                        d="M13 7.5A5 5 0 1 1 10.2 3.4"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M10 2.2v2.6h2.6"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <ArrowClockwise size={16} weight="regular" aria-hidden />
                   </button>
                 )}
 
@@ -1138,34 +1100,7 @@ export function PuzzleBoard({
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => handleFlipPiece(e, piece.id)}
                   >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                      <path
-                        d="M3 4.5h7.5a2.5 2.5 0 0 1 0 5H8"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M5.5 7 3 4.5 5.5 2"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M13 11.5H5.5a2.5 2.5 0 0 1 0-5H8"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M10.5 9 13 11.5 10.5 14"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <FlipHorizontal size={16} weight="regular" aria-hidden />
                   </button>
                 )}
               </div>
@@ -1225,9 +1160,7 @@ export function PuzzleBoard({
                 aria-expanded={menuOpen}
                 data-cuelume-toggle
               >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <List size={18} weight="regular" aria-hidden />
               </button>
             </div>
           )}
@@ -1238,20 +1171,10 @@ export function PuzzleBoard({
             title={safeOn ? 'Hide safe zone' : 'Show safe zone'}
             data-cuelume-toggle
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <rect x="3.5" y="3.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
+            <Square size={18} weight="regular" aria-hidden />
           </button>
           <button type="button" className="fig-btn" onClick={handleShuffle} title="Shuffle" data-cuelume-press data-cuelume-release>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <path
-                d="M2.5 4.5h4L9 9l2.5-4.5h4M2.5 13.5h4L9 9l2.5 4.5h4"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Shuffle size={18} weight="regular" aria-hidden />
           </button>
         </div>
 
@@ -1268,9 +1191,7 @@ export function PuzzleBoard({
             data-cuelume-toggle
           >
             <SurfaceIcon id={surface} />
-            <svg className="fig-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
-              <path d="M2.2 3.6L5 6.4l2.8-2.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <CaretDown className="fig-chevron" size={12} weight="bold" aria-hidden />
           </button>
 
           {surfaceMenuOpen && (
@@ -1295,20 +1216,14 @@ export function PuzzleBoard({
         </div>
 
         <button type="button" className="fig-btn" onClick={handleReset} title="Reset" data-cuelume-press data-cuelume-release>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <path d="M14.5 9A5.5 5.5 0 1 1 12.2 4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            <path d="M12 2.5v3h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <ArrowClockwise size={18} weight="regular" aria-hidden />
         </button>
 
         <span className="fig-sep" aria-hidden />
 
         <div className="fig-cluster fig-meta">
           <div className="fig-timer" title="Timer">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <circle cx="8" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.4" />
-              <path d="M8 5.5V8.5L10 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
+            <Clock size={14} weight="regular" aria-hidden />
             <span>{formatTimer(elapsed)}</span>
             {done && <span className="fig-done">done</span>}
           </div>

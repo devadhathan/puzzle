@@ -587,7 +587,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 10px);
-  transform: translateX(-50%);
+  transform: translateX(calc(-50% - 10px));
   min-width: 148px;
   padding: 0.35rem;
   border-radius: 14px;
@@ -682,6 +682,18 @@
   cursor: pointer;
   padding: 0;
   transition: background 0.15s ease;
+}
+
+.fig-btn svg {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.fig-surface-option svg {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 .fig-btn:hover {

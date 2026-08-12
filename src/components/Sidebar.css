@@ -36,12 +36,11 @@
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 0.22s ease,
-    visibility 0.22s,
+    opacity 0.2s ease 0.04s,
+    visibility 0.2s 0.04s,
     margin-bottom 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
   padding: 0;
-  /* no transform — keeps backdrop-filter working */
 }
 
 .sidebar.is-open {
@@ -51,21 +50,37 @@
   pointer-events: auto;
 }
 
-/* Frost shell separate from scroll — overflow + backdrop-filter on same node breaks scroll */
+/*
+  Opaque base + separate blur layer so the first paint isn't a clear glass
+  (backdrop-filter often composites a frame late).
+*/
 .sidebar-shell {
+  position: relative;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(56px) saturate(1.6);
-  -webkit-backdrop-filter: blur(56px) saturate(1.6);
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
   overflow: hidden;
   max-height: min(70vh, 560px);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sidebar-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(48px) saturate(1.55);
+  -webkit-backdrop-filter: blur(48px) saturate(1.55);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .sidebar-inner {
+  position: relative;
+  z-index: 1;
   padding: 1.15rem 1.15rem 1.25rem;
   color: #1a1a1a;
   max-height: min(70vh, 560px);
