@@ -1,0 +1,305 @@
+.sidebar-toggle {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.1rem;
+  top: auto;
+  right: auto;
+  z-index: 55;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.72);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.sidebar-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.sidebar {
+  position: absolute;
+  /* Align with left edge of centered bottom dock / menu icon */
+  left: max(0.65rem, calc(50% - 11.75rem));
+  right: auto;
+  bottom: 4.6rem;
+  top: auto;
+  z-index: 50;
+  width: min(340px, calc(100% - 1.3rem));
+  transform: translateY(120%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  padding: 0.85rem;
+}
+
+.sidebar.is-open {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.sidebar-inner {
+  padding: 1.15rem 1.15rem 1.25rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(1.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+  color: #1a1a1a;
+  max-height: min(62vh, 560px);
+  overflow: auto;
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar-kicker {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.sidebar-title {
+  margin: 0.3rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.piece-pill {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.puzzle-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.4rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.puzzle-card:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.puzzle-card.is-active {
+  border-color: rgba(0, 122, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.25);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.puzzle-thumb {
+  display: block;
+  width: 56px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.puzzle-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.puzzle-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.puzzle-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.puzzle-artist {
+  font-size: 0.68rem;
+  color: rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.02em;
+}
+
+.piece-block {
+  margin-top: 1.15rem;
+  padding: 0.9rem 0.95rem 0.85rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.slider-labels span {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.slider-shell {
+  position: relative;
+  height: 28px;
+  display: grid;
+  align-items: center;
+}
+
+.slider-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.slider-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #0a84ff;
+  box-shadow: 0 0 12px rgba(10, 132, 255, 0.35);
+}
+
+.slider-ticks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px;
+}
+
+.slider-tick {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.slider-tick.is-on {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.piece-slider {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  height: 28px;
+  margin: 0;
+  cursor: grab;
+}
+
+.piece-slider:active {
+  cursor: grabbing;
+}
+
+.piece-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  background: transparent;
+}
+
+.piece-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}
+
+.piece-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.piece-slider::-moz-range-track {
+  height: 10px;
+  background: transparent;
+  border: none;
+}
+
+.piece-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}
+
+.piece-grid {
+  margin: 0.7rem 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.42);
+  font-variant-numeric: tabular-nums;
+}
+
+.surface-dark .sidebar-toggle,
+.surface-cloth .sidebar-toggle {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+}
