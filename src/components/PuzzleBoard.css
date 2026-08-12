@@ -641,35 +641,31 @@
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
 }
 
-/* Portaled overlays — always above the canvas */
+/* Portaled overlays — left/bottom/right set inline from trigger rects */
 .fig-surface-menu.is-portal,
 .fig-about-panel.is-portal,
 .ref-panel.is-portal {
   position: fixed;
   z-index: 10050;
-  transform: translateZ(0);
 }
 
 .fig-surface-menu.is-portal {
-  left: 50%;
-  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  right: auto;
   transform: translateX(-50%) translateZ(0);
 }
 
 .fig-about-panel.is-portal {
-  left: 50%;
   right: auto;
-  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%) translateZ(0);
   width: min(260px, calc(100vw - 24px));
 }
 
 .ref-panel.is-portal {
-  right: 0.75rem;
   left: auto;
-  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  right: auto;
   width: min(72vw, 240px);
   max-height: min(48vh, 280px);
+  transform: translateZ(0);
 }
 
 .fig-about-wrap {

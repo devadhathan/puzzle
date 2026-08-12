@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import confetti from 'canvas-confetti'
 import {
@@ -144,11 +144,20 @@ export function PuzzleBoard({
   const [showPreview, setShowPreview] = useState(false)
   const [surfaceMenuOpen, setSurfaceMenuOpen] = useState(false)
   const surfaceMenuRef = useRef<HTMLDivElement>(null)
+  const surfaceTriggerRef = useRef<HTMLButtonElement>(null)
   const surfaceMenuPanelRef = useRef<HTMLDivElement>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
   const aboutRef = useRef<HTMLDivElement>(null)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
+  const refBtnRef = useRef<HTMLButtonElement>(null)
   const refPanelRef = useRef<HTMLDivElement>(null)
+  const [surfaceMenuPos, setSurfaceMenuPos] = useState({ left: 0, bottom: 80 })
+  const [aboutPos, setAboutPos] = useState({ left: 0, bottom: 80 })
+  const [refPos, setRefPos] = useState({
+    left: 0,
+    bottom: 80,
+    width: 240,
+  })
   const [gridLines, setGridLines] = useState<{
     w: number
     h: number
@@ -1103,6 +1112,61 @@ export function PuzzleBoard({
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [showPreview])
 
+  const placePopoverAbove = useCallback((el: HTMLElement | null) => {
+    if (!el) return { left: window.innerWidth / 2, bottom: 80 }
+    const r = el.getBoundingClientRect()
+    const pad = 8
+    const gap = 10
+    return {
+      left: Math.max(pad, Math.min(r.left + r.width / 2, window.innerWidth - pad)),
+      bottom: Math.max(pad, window.innerHeight - r.top + gap),
+    }
+  }, [])
+
+  const placeRefPopover = useCallback(() => {
+    const el = refBtnRef.current
+    const pad = 8
+    const gap = 10
+    const width = Math.min(window.innerWidth * 0.72, 240)
+    if (!el) {
+      return {
+        left: Math.max(pad, window.innerWidth - width - pad),
+        bottom: 80,
+        width,
+      }
+    }
+    const r = el.getBoundingClientRect()
+    const center = r.left + r.width / 2
+    let left = center - width / 2
+    left = Math.max(pad, Math.min(left, window.innerWidth - width - pad))
+    return {
+      left,
+      bottom: Math.max(pad, window.innerHeight - r.top + gap),
+      width,
+    }
+  }, [])
+
+  /** Keep portaled popovers glued to their triggers on resize/scroll */
+  useLayoutEffect(() => {
+    const update = () => {
+      if (surfaceMenuOpen) setSurfaceMenuPos(placePopoverAbove(surfaceTriggerRef.current))
+      if (aboutOpen) {
+        setAboutPos(
+          placePopoverAbove(aboutRef.current?.querySelector('button') ?? null),
+        )
+      }
+      if (showPreview) setRefPos(placeRefPopover())
+    }
+
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [surfaceMenuOpen, aboutOpen, showPreview, placePopoverAbove, placeRefPopover])
+
   const handleRotateSelected = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -1394,9 +1458,11 @@ export function PuzzleBoard({
 
         <div className="fig-surface-wrap" ref={surfaceMenuRef}>
           <button
+            ref={surfaceTriggerRef}
             type="button"
             className={`fig-btn fig-surface-trigger ${surfaceMenuOpen ? 'is-on' : ''}`}
             onClick={() => {
+              setSurfaceMenuPos(placePopoverAbove(surfaceTriggerRef.current))
               setSurfaceMenuOpen((v) => !v)
               setAboutOpen(false)
               setShowPreview(false)
@@ -1418,6 +1484,7 @@ export function PuzzleBoard({
               className={`fig-surface-menu is-portal surface-menu-${surface}`}
               role="listbox"
               aria-label="Canvas background"
+              style={{ left: surfaceMenuPos.left, bottom: surfaceMenuPos.bottom }}
             >
               {SURFACES.map((s) => (
                 <button
@@ -1462,6 +1529,9 @@ export function PuzzleBoard({
             type="button"
             className={`fig-btn ${aboutOpen ? 'is-on' : ''}`}
             onClick={() => {
+              setAboutPos(
+                placePopoverAbove(aboutRef.current?.querySelector('button') ?? null),
+              )
               setAboutOpen((v) => !v)
               setSurfaceMenuOpen(false)
               setShowPreview(false)
@@ -1480,9 +1550,11 @@ export function PuzzleBoard({
       {previewUrl && (
         <div className="ref-controls">
           <button
+            ref={refBtnRef}
             type="button"
             className={`ref-btn ${showPreview ? 'is-open' : ''}`}
             onClick={() => {
+              setRefPos(placeRefPopover())
               setShowPreview((v) => !v)
               setSurfaceMenuOpen(false)
               setAboutOpen(false)
@@ -1490,7 +1562,7 @@ export function PuzzleBoard({
             title={showPreview ? 'Hide reference' : 'Show reference'}
             data-cuelume-toggle
           >
-            <img src={previewUrl} alt="Puzzle reference" draggable={false} />
+            <img src={imageUrl} alt="Puzzle reference" draggable={false} />
           </button>
         </div>
       )}
@@ -1503,6 +1575,7 @@ export function PuzzleBoard({
             className={`fig-about-panel is-portal surface-menu-${surface}`}
             role="dialog"
             aria-label="About me"
+            style={{ left: aboutPos.left, bottom: aboutPos.bottom }}
           >
             <p className="fig-about-kicker">Made by</p>
             <p className="fig-about-name">Devadhathan</p>
@@ -1522,15 +1595,19 @@ export function PuzzleBoard({
         )}
 
       {showPreview &&
-        previewUrl &&
         createPortal(
           <div
             ref={refPanelRef}
             className={`ref-panel is-portal surface-menu-${surface}`}
             role="dialog"
             aria-label="Reference image"
+            style={{
+              left: refPos.left,
+              bottom: refPos.bottom,
+              width: refPos.width,
+            }}
           >
-            <img src={previewUrl} alt="Full puzzle preview" draggable={false} />
+            <img src={imageUrl} alt="Full puzzle preview" draggable={false} />
           </div>,
           document.body,
         )}
